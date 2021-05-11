@@ -2,7 +2,6 @@ import os
 import sys
 from enum import Enum
 
-
 ######################################################################################
 #                                                                                    #
 #                                  GLOBALS                                           #
@@ -12,7 +11,7 @@ MOLECULE = 50
 KTABLE = "somepath"
 MODELSATATIME = 100
 RUNNAME = "name"
-PROFILENAMES
+PROFILENAMES = "profile"
 
 ######################################################################################
 #                                                                                    #
@@ -34,13 +33,17 @@ class Molecule(Enum):
 
 # function below is called in the case of a failure, and exits the program
 def program_failure():
-    printf("Exiting...")
+    print("Exiting...")
     exit(0)
+
+def path_failure(path_name):
+    print("Unable to find path {}", path_name)
+    program_failure()
 
 # function below verifies that molecule labelled at top is a valid input. 
 def verify_molecule(molecule):
     if molecule not in Molecule:
-        printf("molecule {} is not a valid value for the molecule.", molecule)
+        print("molecule {} is not a valid value for the molecule.", molecule)
         program_failure()
     return
 
@@ -64,18 +67,186 @@ def full_or_forward(run):
     return False 
     
 # This function is designed to read in the run_dictionary file, and return a dictionary
-def read_run_dictionary(run_dictionary_path):
+def read_run_dictionary(run_dictionary_path, current_path):
+    # This is the dictionary. key is model # value is Scalar #
     run_dictionary = {}
     
+    # If the path exists change directory else failure
+    if os.path.exists(run_dictionary_path):
+        os.chdir(run_dictionary_path)
+    else:
+        path_failure(run_dictionary_path)
+
+    # If the path exists get run_dictionary information else failure
+    run_dictionary_list = []
+    if os.path.exists(run_dictionary_path+'run_dictionary'):
+        with open('run_dictionary', 'r') as run_dictionary_file:
+            run_dictionary_list = run_dictionary_file.readlines()
+    else:
+        path_failure(run_dictionary_path+'run_dictionary')
+
+    while run_dictionary_list != []:
+        key_values = run_dictionary_list[0].split(' ')
+        key = 0
+        value = 0.0
+
+        # Verifies that the first value in the run_dictionary is valid. 
+        if key_values[0].isdigit():
+            key  = int(key_values[0])
+        else:
+            print("Error reading dictionary {} key is not valid input.", key_values[0])
+            program_failure()
+        
+        #removes the newline character from the second string
+        key_values[1].replace('\n', '')
+
+        # Verifies that the second value in run_dictionary is valid
+        if key_values[1].replace('.','').isdigit():
+            value = float(key_values[1])
+        else:
+            print("Error reading dictionary {} value is not valid input.", key_values[1])
+            program_failure()
+
+        run_dictionary[key] = value
+        del run_dictionary_list[0]
+
+        
+    os.chdir(current_path)
+    return run_dictionary
+
 # This function is designed to edit the run_name.apr file
-def edit_run_name_apr(run_name_apr_path):
+def edit_run_name_apr(run_name_apr_path, scalar, current_path):
 
-# This function is designed to edit the inp file
-def edit_inp(inp_path_name):
+    # If Path exists chdir, else path_failure()
+    if os.path.exists(run_name_apr_path):
+        os.chdir(run_name_apr_path)
+    else:
+        path_failure(run_name_apr_path)
 
-def edit_kls(kls_path_name):
+    file_name = ''
+    verify_path = False
+    for item in os.listdir(run_name_apr_path):
+        if '.apr' in item:
+            verify_path = True
+            file_name = item
+            break
 
-def aersol_switch(aersol_path):
+    # Below does action if .apr file is found, else path_failure
+    run_name_list = []
+    if verify_path:
+        with open('run_name.apr', 'r') as run_name_file:
+            run_name_list = run_name_file.readlines()
+    else:
+        path_failure(run_name_apr_path+'*.apr')
+
+
+    # this is where the editing 'magic' happens
+    
+    #below subtracts the first number by 1 in the second row. 
+    if run_name_list[1][0].isdigit():
+        run_name_list[1][0] = str(int(run_name_list[1][0]) - 1) + run_name_list[0][1:]
+    else:
+        print("Unable to convert the first char in string {} to int", run_name_list[0])
+
+    # Deletes rows 3-6
+    del run_name_list[2]
+    del run_name_list[3]
+    del run_name_list[4]
+    del run_name_list[5]
+
+    # Below appends the moleule and scalar to the end of file
+    run_name_list.append(str(MOLECULE)+' 1 2')
+    run_name_list.append(str(scalar)+' 0.5')
+
+    with open('run_name.apr', 'w') as run_name_file:
+        run_name_file.write(str(run_name_list))
+
+    os.chdir(current_path)
+    
+# This function edits the .inp file
+def edit_inp(inp_path_name, current_path)
+    # Verify path exists, else failure
+    if os.path.exists(inp_path_name):
+        os.chdir(inp_path_name)
+    else:
+        path_failure(inp_path_name)
+    
+    #loop verifies the .inp file is in path, and saves its name
+    verify_path = False
+    file_name = ''
+    for item in os.listdir(inp_path_name)
+        if ".inp" in item:
+            verify_path = True
+            file_name = item
+            break
+    
+    if verify_path:
+        rewrite_string = []
+        with open(file_name, 'w') as inp_file:
+            rewrite_string = inp_file.readlines()
+        
+        # Changes the 4th line to a 0
+        rewrite_string[3] = "0\n"
+
+        # Rewrites the file with a 0 in the 4th spot
+        with open(file_name, 'w') as inp_file:
+            inp_file.writelines(str.join(rewrite_string))
+
+
+    else:
+        path_failure(inp_path_name+'*.inp')
+    
+    os.chdir(current_path)
+
+# This function edits the .kls file
+def edit_kls(kls_path_name, current_path):
+    # Checks if path exists. if it does, chdir else failure
+    if os.path.exists(kls_path_name):
+        os.chdir(kls_path_name)
+    else:
+        path_failure(kls_path_name)
+
+    #loop verifies the .kls file is in path, and saves its name
+    verify_path = False
+    file_name = ''
+    for item in os.listdir(kls_path_name)
+        if ".kls" in item:
+            verify_path = True
+            file_name = item
+            break
+    
+    # Checks if path is valid. ifso, append KTABLE to file, else path_failure
+    if verify_path:
+        with open(file_name, 'a') as kls_file:
+            kls_file.write(KTABLE+'\n')
+    else:
+        path_failure(kls_path_name+'.kls')
+
+    os.chdir(current_path)
+
+# Below removes the aersol.ref and renames aersol.prf to aersol.ref
+def aersol_switch(aersol_path, current_path):
+    #checks if path exists. if it does chdir, else program_failure()
+    if os.path.exists(aersol_path):
+        os.chdir(aersol_path)
+    else:
+        path_failure(aersol_path)
+    
+    # Checks if aersol.ref is in the path. if it is continue, else program_failure()
+    if os.path.exists(aersol_path+"aersol.ref"):
+
+        # Checks if aersol.prf is in path. if it is rm aersol.ref, rename aersol.prf, else program_failure()
+        if os.path.exists(aersol_path+"aersol.prf"):
+            os.remove("aersol.ref")
+            os.rename("aersol.prf", "aersol.ref")
+        else:
+            path_failure(aersol_path+'aersol.prf')
+
+    else:
+        path_failure(aersol_path+'aersol.ref')
+
+    os.chdir(current_path)
+    
 
 #Below is the main function, the function that runs it all
 def main():
