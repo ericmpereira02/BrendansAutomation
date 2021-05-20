@@ -10,11 +10,22 @@ from enum import Enum, unique
 
 # All directory paths must end in a slash, and all file paths do not end in a slash
 
+# must be some integer value
 MOLECULE = 50
+
+# must be an absolute location path
 KTABLE = "somepath"
+
+# must be some integer value
 MODELSATATIME = 100
+
+# can be any string
 RUNNAME = 'name'
-PROFILENAMES = ['','','','','','']
+
+# key must be a string, value must be an integer
+PROFILENAMES = {}
+
+# must be an absolute location path 
 RUNDICTIONARYPATH = '/home/shellshock/Documents/Repos/BrendansAutomation/'
 
 ######################################################################################
@@ -42,13 +53,16 @@ def program_failure():
     exit(0)
 
 def path_failure(path_name):
-    print("Unable to find path {}", path_name)
+    print(f"Unable to find path {path_name}")
     program_failure()
 
 # function below verifies that molecule labelled at top is a valid input. 
 def verify_molecule(molecule):
+    if type(molecule) != int:
+        print(f"molecule {molecule} is not an integer, change the value and try again")
+        program_failure()
     if molecule not in [mol.value for mol in Molecule]:
-        print("molecule {} is not a valid value for the molecule.", molecule)
+        print(f"molecule {molecule} is not a valid value for the molecule.")
         program_failure()
     return
 
@@ -99,7 +113,7 @@ def read_run_dictionary(run_dictionary_path, current_path):
         if key_values[0].isdigit():
             key  = int(key_values[0])
         else:
-            print("Error reading dictionary {} key is not valid input.", key_values[0])
+            print(f"Error reading dictionary {key_values[0]} key is not valid input.")
             program_failure()
         
         #removes the newline character from the second string
@@ -109,7 +123,7 @@ def read_run_dictionary(run_dictionary_path, current_path):
         if key_values[1].replace('.','').isdigit():
             value = float(key_values[1])
         else:
-            print("Error reading dictionary {} value is not valid input.", key_values[1])
+            print(f"Error reading dictionary {key_values[1]} value is not valid input.")
             program_failure()
 
         run_dictionary[key] = value
@@ -151,7 +165,7 @@ def edit_run_name_apr(run_name_apr_path, scalar, current_path):
     if run_name_list[1][0].isdigit():
         run_name_list[1][0] = str(int(run_name_list[1][0]) - 1) + run_name_list[0][1:]
     else:
-        print("Unable to convert the first char in string {} to int", run_name_list[0])
+        print(f"Unable to convert the first char in string {run_name_list[0]} to int")
 
     # Deletes rows 3-6
     del run_name_list[2]
@@ -255,9 +269,26 @@ def aersol_switch(aersol_path, current_path):
 
 #Below is the main function, the function that runs it all
 def run():
+   # below makes sure the molecule is a valid type
    verify_molecule(MOLECULE)
+
+   # stores the current directory value for later use
    current_directory = os.curdir
-   run_dictionary_item = read_run_dictionary(RUNDICTIONARYPATH, current_directory)
+
+   # verifies that the RUNDICTIONARYPATH is a string
+   if type(RUNDICTIONARYPATH) != str:
+       print("RUNDICTIONARYPATH is not of string type, fix it and restart")
+       program_failure()
+
+   # gets the run_dictionary
+   run_dictionary = read_run_dictionary(RUNDICTIONARYPATH, current_directory)
+
+   for key in run_dictionary:
+       full = full_or_forward(key)
+       if full:
+          print("do a thing")
+       else:
+          print("do other thing")
    return 
 
 
