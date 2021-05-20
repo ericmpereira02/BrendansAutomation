@@ -1,0 +1,20 @@
+******** any header info you like. One line only ********
+9			! number of variable profiles (vmr,T, or cont)
+-1 0 0
+aerosolapr.dat
+0 0 0                   ! Temperature - continuous
+tempapr.dat
+6 2 2
+1.0 0.5
+6 3 2
+1.0 0.5
+6 4 2
+1.0 0.5
+26 1 2
+1.0 0.5
+27 1 2
+1.0 0.5
+32 1 2
+1.0 0.5
+34 1 2
+1.0 0.5

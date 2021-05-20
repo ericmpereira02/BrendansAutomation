@@ -1,17 +1,21 @@
 import os
 import sys
-from enum import Enum
+from enum import Enum, unique
 
 ######################################################################################
 #                                                                                    #
 #                                  GLOBALS                                           #
 #                                                                                    #
 ######################################################################################
+
+# All directory paths must end in a slash, and all file paths do not end in a slash
+
 MOLECULE = 50
 KTABLE = "somepath"
 MODELSATATIME = 100
-RUNNAME = "name"
-PROFILENAMES = "profile"
+RUNNAME = 'name'
+PROFILENAMES = ['','','','','','']
+RUNDICTIONARYPATH = '/home/shellshock/Documents/Repos/BrendansAutomation/'
 
 ######################################################################################
 #                                                                                    #
@@ -20,6 +24,7 @@ PROFILENAMES = "profile"
 ######################################################################################
 
 # Enum Below verifies and allows Molecules to only be specific numbers
+@unique
 class Molecule(Enum):
     MethylCyanide = 50
     NButane       = 78
@@ -42,7 +47,7 @@ def path_failure(path_name):
 
 # function below verifies that molecule labelled at top is a valid input. 
 def verify_molecule(molecule):
-    if molecule not in Molecule:
+    if molecule not in [mol.value for mol in Molecule]:
         print("molecule {} is not a valid value for the molecule.", molecule)
         program_failure()
     return
@@ -98,7 +103,7 @@ def read_run_dictionary(run_dictionary_path, current_path):
             program_failure()
         
         #removes the newline character from the second string
-        key_values[1].replace('\n', '')
+        key_values[1] = key_values[1].replace('\n', '')
 
         # Verifies that the second value in run_dictionary is valid
         if key_values[1].replace('.','').isdigit():
@@ -164,7 +169,7 @@ def edit_run_name_apr(run_name_apr_path, scalar, current_path):
     os.chdir(current_path)
     
 # This function edits the .inp file
-def edit_inp(inp_path_name, current_path)
+def edit_inp(inp_path_name, current_path):
     # Verify path exists, else failure
     if os.path.exists(inp_path_name):
         os.chdir(inp_path_name)
@@ -174,7 +179,7 @@ def edit_inp(inp_path_name, current_path)
     #loop verifies the .inp file is in path, and saves its name
     verify_path = False
     file_name = ''
-    for item in os.listdir(inp_path_name)
+    for item in os.listdir(inp_path_name):
         if ".inp" in item:
             verify_path = True
             file_name = item
@@ -209,7 +214,7 @@ def edit_kls(kls_path_name, current_path):
     #loop verifies the .kls file is in path, and saves its name
     verify_path = False
     file_name = ''
-    for item in os.listdir(kls_path_name)
+    for item in os.listdir(kls_path_name):
         if ".kls" in item:
             verify_path = True
             file_name = item
@@ -249,8 +254,12 @@ def aersol_switch(aersol_path, current_path):
     
 
 #Below is the main function, the function that runs it all
-def main():
+def run():
    verify_molecule(MOLECULE)
+   current_directory = os.curdir
+   run_dictionary_item = read_run_dictionary(RUNDICTIONARYPATH, current_directory)
+   return 
+
 
 
 ######################################################################################
@@ -258,4 +267,4 @@ def main():
 #                                    START                                           #
 #                                                                                    #
 ######################################################################################
-main()
+run()
