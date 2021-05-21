@@ -2,6 +2,7 @@ import os
 import sys
 from enum import Enum, unique
 from subprocess import Popen, PIPE
+import shutil
 
 ######################################################################################
 #                                                                                    #
@@ -209,9 +210,7 @@ def run():
    for key in run_dictionary:
        #below gets the associated_full value
        full = associated_full(key)
-       copy_command = 'cp -r run' + str(full) + ' run' + str(key)
-       p = Popen(copy_command, stdin=PIPE, shell=False)
-       p.wait()
+       shutil('run'+str(full), 'run'+str(key))
 
        edit_run_name_apr('run'+str(key), run_dictionary[key], current_directory)
 
