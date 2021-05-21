@@ -1,6 +1,7 @@
 import os
 import sys
 from enum import Enum, unique
+from subprocess import Popen, PIPE
 
 ######################################################################################
 #                                                                                    #
@@ -13,19 +14,19 @@ from enum import Enum, unique
 # must be some integer value
 MOLECULE = 50
 
-# must be an absolute location path
-KTABLE = "somepath"
-
 # must be some integer value
 MODELSATATIME = 100
 
 # can be any string
 RUNNAME = 'name'
 
+# must be an absolute location path of NEMESIS directory
+NEMESIS = ''
+
 # key must be a string, value must be an integer
 PROFILENAMES = {}
 
-# must be an absolute location path 
+# must be an absolute location path for the run_dictionary
 RUNDICTIONARYPATH = '/home/shellshock/Documents/Repos/BrendansAutomation/'
 
 ######################################################################################
@@ -67,23 +68,33 @@ def verify_molecule(molecule):
     return
 
 # This function verifies whether a run is a full run or a forward run
-def full_or_forward(run):
-    isFullRun = False
+def associated_full(run):
 
-    #if run is equal to 0 or a centruy run it is considered a full run
-    if (run % 100) == 0:
-        return True
-    
-    # If it does not pass the first we check if run is greater than 100. if it is, mod it 
-    # by 100 and then we can do the next steps to verify. 
-    if (run > 100):
-        run = run % 100
-    
-    #if it is run 30 or run 60 it is a full run, and returns True
-    if run == 30 or run == 60:
-        return True
+    # the extended_value is the extended value for numbers > 100 and will
+    # always be a factor of 100
+    extended_value = 0
 
-    return False 
+    # the deterministic_value is the value used to determine the run
+    deterministic_value = 0
+
+    #below runs equations to get accurate deterministic and extended values
+    if run > 100:
+        deterministic_value = run % 100
+        extended_value = run - deterministic_value;
+    else:
+        deterministic_value = run
+    
+    # if dv is less than 30, its associated with full run 0 for whatever exteded value is
+    if deterministic_value < 30:
+        return extended_value
+    
+    # if dv is less than 60 its associated with full run 30 for whatever extended value is
+    if deterministic_value < 60:
+        return extended_value + 30
+
+    # in all other cases the dv is associated with full run 60 for whatever extended value is
+    return extended_value + 60
+    
     
 # This function is designed to read in the run_dictionary file, and return a dictionary
 def read_run_dictionary(run_dictionary_path, current_path):
@@ -159,113 +170,15 @@ def edit_run_name_apr(run_name_apr_path, scalar, current_path):
         path_failure(run_name_apr_path+'*.apr')
 
 
-    # this is where the editing 'magic' happens
-    
-    #below subtracts the first number by 1 in the second row. 
-    if run_name_list[1][0].isdigit():
-        run_name_list[1][0] = str(int(run_name_list[1][0]) - 1) + run_name_list[0][1:]
-    else:
-        print(f"Unable to convert the first char in string {run_name_list[0]} to int")
 
-    # Deletes rows 3-6
-    del run_name_list[2]
-    del run_name_list[3]
-    del run_name_list[4]
-    del run_name_list[5]
-
-    # Below appends the moleule and scalar to the end of file
-    run_name_list.append(str(MOLECULE)+' 1 2')
-    run_name_list.append(str(scalar)+' 0.5')
+    line_4_list = run_name_list[3].split(' ')
+    line_4_list[0] = scalar
+    run_name_list[3] = str(line_4_list);
 
     with open('run_name.apr', 'w') as run_name_file:
         run_name_file.write(str(run_name_list))
 
-    os.chdir(current_path)
-    
-# This function edits the .inp file
-def edit_inp(inp_path_name, current_path):
-    # Verify path exists, else failure
-    if os.path.exists(inp_path_name):
-        os.chdir(inp_path_name)
-    else:
-        path_failure(inp_path_name)
-    
-    #loop verifies the .inp file is in path, and saves its name
-    verify_path = False
-    file_name = ''
-    for item in os.listdir(inp_path_name):
-        if ".inp" in item:
-            verify_path = True
-            file_name = item
-            break
-    
-    if verify_path:
-        rewrite_string = []
-        with open(file_name, 'w') as inp_file:
-            rewrite_string = inp_file.readlines()
-        
-        # Changes the 4th line to a 0
-        rewrite_string[3] = "0\n"
-
-        # Rewrites the file with a 0 in the 4th spot
-        with open(file_name, 'w') as inp_file:
-            inp_file.writelines(str.join(rewrite_string))
-
-
-    else:
-        path_failure(inp_path_name+'*.inp')
-    
-    os.chdir(current_path)
-
-# This function edits the .kls file
-def edit_kls(kls_path_name, current_path):
-    # Checks if path exists. if it does, chdir else failure
-    if os.path.exists(kls_path_name):
-        os.chdir(kls_path_name)
-    else:
-        path_failure(kls_path_name)
-
-    #loop verifies the .kls file is in path, and saves its name
-    verify_path = False
-    file_name = ''
-    for item in os.listdir(kls_path_name):
-        if ".kls" in item:
-            verify_path = True
-            file_name = item
-            break
-    
-    # Checks if path is valid. ifso, append KTABLE to file, else path_failure
-    if verify_path:
-        with open(file_name, 'a') as kls_file:
-            kls_file.write(KTABLE+'\n')
-    else:
-        path_failure(kls_path_name+'.kls')
-
-    os.chdir(current_path)
-
-# Below removes the aersol.ref and renames aersol.prf to aersol.ref
-def aersol_switch(aersol_path, current_path):
-    #checks if path exists. if it does chdir, else program_failure()
-    if os.path.exists(aersol_path):
-        os.chdir(aersol_path)
-    else:
-        path_failure(aersol_path)
-    
-    # Checks if aersol.ref is in the path. if it is continue, else program_failure()
-    if os.path.exists(aersol_path+"aersol.ref"):
-
-        # Checks if aersol.prf is in path. if it is rm aersol.ref, rename aersol.prf, else program_failure()
-        if os.path.exists(aersol_path+"aersol.prf"):
-            os.remove("aersol.ref")
-            os.rename("aersol.prf", "aersol.ref")
-        else:
-            path_failure(aersol_path+'aersol.prf')
-
-    else:
-        path_failure(aersol_path+'aersol.ref')
-
-    os.chdir(current_path)
-    
+    os.chdir(current_path) 
 
 #Below is the main function, the function that runs it all
 def run():
@@ -283,13 +196,44 @@ def run():
    # gets the run_dictionary
    run_dictionary = read_run_dictionary(RUNDICTIONARYPATH, current_directory)
 
+   # Verifies that the NEMESIS directory exists, if not throws and error and fails program. 
+   if os.path.exists(NEMESIS):
+      os.chdir(NEMESIS)
+   else:
+      print(f"The Nemesis folder {NEMESIS} was not found, restart and put in correct value")
+      program_failure()
+
+   # for each key in the dictionary do some actions, once the count gets to a specific point
+   # create a command for each key, pop, then run automated commands. 
+   key_values = []
    for key in run_dictionary:
-       full = full_or_forward(key)
-       if full:
-          print("do a thing")
-       else:
-          print("do other thing")
-   return 
+       #below gets the associated_full value
+       full = associated_full(key)
+       copy_command = 'cp run' + str(full) + ' run' + str(key)
+       p = os.popen(copy_command, stdin=PIPE, shell=False)
+       p.wait()
+
+       edit_run_name_apr('run'+str(key), run_dictionary[key], current_directory)
+
+
+       run_dictionary.pop(key)
+
+       key_values.append(key)
+       #if the length is equal to modelsatatime or there is no more items left in run_dictionary
+       if len(key_values) == MODELSATATIME or not run_dictionary:
+           all_commands = []
+           for item in key_values:
+               command_name = 'NEMESIS<'+RUNNAME+'.nam>run_log.log'
+               command = os.popen(command_name, stdin = PIPE, shell=False)
+               print(f'starting command {command_name}')
+               all_commands.append(command)
+
+           for command in all_commands:
+              command.wait()
+              print(f'finished running command {command}')
+    
+    
+               
 
 
 
