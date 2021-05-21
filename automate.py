@@ -209,8 +209,8 @@ def run():
    for key in run_dictionary:
        #below gets the associated_full value
        full = associated_full(key)
-       copy_command = 'cp run' + str(full) + ' run' + str(key)
-       p = os.popen(copy_command, stdin=PIPE, shell=False)
+       copy_command = 'cp -r run' + str(full) + ' run' + str(key)
+       p = Popen(copy_command, stdin=PIPE, shell=False)
        p.wait()
 
        edit_run_name_apr('run'+str(key), run_dictionary[key], current_directory)
