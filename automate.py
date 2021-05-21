@@ -211,10 +211,11 @@ def run():
        #below gets the associated_full value
        full = associated_full(key)
        shutil('run'+str(full), 'run'+str(key))
+       print(f'copied run{full} to run{key}')
 
        edit_run_name_apr('run'+str(key), run_dictionary[key], current_directory)
 
-
+       #as item gets added it removes from dictoinary and appends to another list for later command. 
        run_dictionary.pop(key)
 
        key_values.append(key)
@@ -230,12 +231,11 @@ def run():
            for command in all_commands:
               command.wait()
               print(f'finished running command {command}')
-    
-    
-               
+              key_values.pop(command)
+            
+           print(f'Finished sequence, moving to the next sequence...')
 
-
-
+   print(f'Finished task, look through results.')
 ######################################################################################
 #                                                                                    #
 #                                    START                                           #
