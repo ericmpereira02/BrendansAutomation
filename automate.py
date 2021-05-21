@@ -224,8 +224,7 @@ def run():
            all_commands = []
            for item in key_values:
                command_name = 'NEMESIS<'+RUNNAME+'.nam>run_log.log'
-               os.Popen()
-               command = os.Popen(command_name, stdin = PIPE, shell=False)
+               command = Popen(command_name, stdin = PIPE, shell=False)
                print(f'starting command {command_name}')
                all_commands.append(command)
 
