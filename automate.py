@@ -15,7 +15,7 @@ from subprocess import Popen, PIPE
 MOLECULE = 50
 
 # must be some integer value
-MODELSATATIME = 100
+MODELSATATIME = 2
 
 # can be any string
 RUNNAME = 'name'
@@ -224,7 +224,8 @@ def run():
            all_commands = []
            for item in key_values:
                command_name = 'NEMESIS<'+RUNNAME+'.nam>run_log.log'
-               command = os.popen(command_name, stdin = PIPE, shell=False)
+               os.Popen()
+               command = os.Popen(command_name, stdin = PIPE, shell=False)
                print(f'starting command {command_name}')
                all_commands.append(command)
 
