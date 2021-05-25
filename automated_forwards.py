@@ -1,8 +1,12 @@
+#Written by Eric "It Gets Better" Pereira, May 24th, 2021
+######################################################################################
+
 import os
 import sys
 from enum import Enum, unique
 from subprocess import Popen, PIPE
 import shutil
+import time
 
 ######################################################################################
 #                                                                                    #
@@ -12,24 +16,29 @@ import shutil
 
 # All directory paths must end in a slash, and all file paths do not end in a slash
 
+#Time at beginning of calculation.
+t0=time.time()
+
 # must be some integer value
 MOLECULE = 50
 
+print('Currently, your choice of gas number is %s.' % MOLECULE)
+dummy=input('Press any key to continue.')
+
 # must be some integer value
-MODELSATATIME = 2
+MODELSATATIME = 10
 
 # can be any string
-RUNNAME = 'name'
+RUNNAME = 'fp4_temps'
 
 # must be an absolute location path of NEMESIS directory
-NEMESIS = ''
+NEMESIS = '/Users/brendan/Goddard/Nemesis'
 
 # key must be a string, value must be an integer
 PROFILENAMES = {}
 
 # must be an absolute location path for the run_dictionary
-RUNDICTIONARYPATH = '/home/shellshock/Documents/Repos/BrendansAutomation/'
-
+RUNDICTIONARYPATH = '/Users/brendan/Goddard/Nemesis/automated/'
 ######################################################################################
 #                                                                                    #
 #                         CLASSES ENUMS AND STRUCTS                                  #
@@ -156,7 +165,7 @@ def edit_run_name_apr(run_name_apr_path, scalar, current_path):
 
     file_name = ''
     verify_path = False
-    for item in os.listdir(run_name_apr_path):
+    for item in os.listdir(os.curdir):
         if '.apr' in item:
             verify_path = True
             file_name = item
@@ -165,7 +174,7 @@ def edit_run_name_apr(run_name_apr_path, scalar, current_path):
     # Below does action if .apr file is found, else path_failure
     run_name_list = []
     if verify_path:
-        with open('run_name.apr', 'r') as run_name_file:
+        with open(RUNNAME+'.apr', 'r') as run_name_file:
             run_name_list = run_name_file.readlines()
     else:
         path_failure(run_name_apr_path+'*.apr')
@@ -173,11 +182,13 @@ def edit_run_name_apr(run_name_apr_path, scalar, current_path):
 
 
     line_4_list = run_name_list[3].split(' ')
-    line_4_list[0] = scalar
-    run_name_list[3] = str(line_4_list);
+    line_4_list[0] = str(scalar)
+    run_name_list[3] = ' '.join(line_4_list)
 
-    with open('run_name.apr', 'w') as run_name_file:
-        run_name_file.write(str(run_name_list))
+    with open(RUNNAME+'.apr', 'w') as run_name_file:
+        #run_name_file.write(str(run_name_list))
+        for item in run_name_list:
+            run_name_file.write(str(item))
 
     os.chdir(current_path) 
 
@@ -197,9 +208,17 @@ def run():
    # gets the run_dictionary
    run_dictionary = read_run_dictionary(RUNDICTIONARYPATH, current_directory)
 
+   #Print the run dictionary and allow user to examine it before beginning.
+   print('We are ready to begin.  The forwad model numbers and associated scaling factors used will be:')
+   for key in run_dictionary:
+       print(key,run_dictionary[key])
+   dummy=input('Press any key to continue.')
+   
    # Verifies that the NEMESIS directory exists, if not throws and error and fails program. 
    if os.path.exists(NEMESIS):
+      print(f'found directory {NEMESIS}')
       os.chdir(NEMESIS)
+      print(f'In directory {os.getcwd()}')
    else:
       print(f"The Nemesis folder {NEMESIS} was not found, restart and put in correct value")
       program_failure()
@@ -207,35 +226,60 @@ def run():
    # for each key in the dictionary do some actions, once the count gets to a specific point
    # create a command for each key, pop, then run automated commands. 
    key_values = []
-   for key in run_dictionary:
+   a_dictionary = run_dictionary.copy()
+   for key in a_dictionary:
        #below gets the associated_full value
        full = associated_full(key)
-       shutil('run'+str(full), 'run'+str(key))
+       destination = shutil.copytree('run'+str(full), 'run'+str(key))
        print(f'copied run{full} to run{key}')
 
-       edit_run_name_apr('run'+str(key), run_dictionary[key], current_directory)
+       edit_run_name_apr('run'+str(key), run_dictionary[key], NEMESIS)
 
        #as item gets added it removes from dictoinary and appends to another list for later command. 
        run_dictionary.pop(key)
 
        key_values.append(key)
        #if the length is equal to modelsatatime or there is no more items left in run_dictionary
-       if len(key_values) == MODELSATATIME or not run_dictionary:
+       if len(key_values) == MODELSATATIME:
            all_commands = []
            for item in key_values:
-               command_name = 'NEMESIS<'+RUNNAME+'.nam>run_log.log'
-               command = Popen(command_name, stdin = PIPE, shell=False)
+               os.chdir(NEMESIS+'/run'+str(item))
+               print(f'entering directory {os.getcwd()}')
+               command_name = 'Nemesis<'+RUNNAME+'.nam>run'+str(item)+'.log'
+               command = Popen(command_name, shell=True, executable="/bin/csh")
+               #command.communicate()
                print(f'starting command {command_name}')
                all_commands.append(command)
 
            for command in all_commands:
               command.wait()
               print(f'finished running command {command}')
-              key_values.pop(command)
+
+           key_values = []
             
            print(f'Finished sequence, moving to the next sequence...')
 
-   print(f'Finished task, look through results.')
+           os.chdir(NEMESIS)
+   if len(key_values) > 0:
+      for item in key_values:
+         command_name = 'Nemesis<'+RUNNAME+'.nam>run'+str(item)+'.log'
+         command = Popen(command_name, shell=True, executable="/bin/csh")
+         #command.communicate()
+         print(f'starting command {command_name}')
+         all_commands.append(command)
+
+      for command in all_commands:
+         command.wait()
+         print(f'finished running command {command}')
+
+      key_values = []
+      
+   print(f'Task complete!')
+   tf=time.time()
+   dt=(tf-t0)/60 #In minutes
+   print('Task took %s minutes.' % dt)
+   print('Have a good day!  Carpe diem!  Seize the carp!')
+    
 ######################################################################################
 #                                                                                    #
 #                                    START                                           #
