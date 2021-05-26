@@ -230,8 +230,8 @@ def run():
    for key in a_dictionary:
        #below gets the associated_full value
        full = associated_full(key)
-       destination = shutil.copytree('run'+str(full), 'run'+str(key))
-       print(f'copied run{full} to run{key}')
+       destination = shutil.copytree('run'+str(full)+'.0', 'run'+str(key))
+       print(f'copied run{full}.0 to run{key}')
 
        edit_run_name_apr('run'+str(key), run_dictionary[key], NEMESIS)
 
